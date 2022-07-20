@@ -8,13 +8,50 @@
 import UIKit
 
 class ViewController: UITableViewController {
+    var initPetitions = [Petition]()
     var petitions = [Petition]()
+    var filterPetitions = [Petition]()
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        print("First=> \(type(of: navigationController?.viewControllers.count))")
+        addBarButton()
+        loadPage()
+    }
+    
+    func addBarButton() {
+        navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .action, target: self, action: #selector(showAlert))
+        
+    }
+    
+    @objc func showAlert() {
+        let ac = UIAlertController(title: "Filter data with your input", message: nil, preferredStyle: .alert)
+        ac.addTextField()
+        
+        let submitAction = UIAlertAction(title: "Submit", style: .default) {
+            [weak self, weak ac] action in
+            guard let answer = ac?.textFields?[0].text else {
+                return
+            }
+            self?.submit(answer)
+        }
+        ac.addAction(submitAction)
+        present(ac, animated: true)
+    }
+    
+    func submit(_ answer: String?) {
+        if let answer = answer, answer != "" {
+            filterPetitions = initPetitions.filter { (item) -> Bool in
+                item.title.lowercased().contains(answer.lowercased())
+            }
+            petitions = filterPetitions
+        } else {
+            petitions = initPetitions
+        }
+        tableView.reloadData()
+        
+    }
+    func loadPage() {
         let urlString: String
-
         if navigationController?.tabBarItem.tag == 0 {
             // urlString = "https://api.whitehouse.gov/v1/petitions.json?limit=100"
             urlString = "https://www.hackingwithswift.com/samples/petitions-1.json"
@@ -42,6 +79,7 @@ class ViewController: UITableViewController {
         let decoder = JSONDecoder()
         
         if let jsonPertitions = try? decoder.decode(Petitions.self, from: json) {
+            initPetitions = jsonPertitions.results
             petitions = jsonPertitions.results
             tableView.reloadData()
         }
